@@ -1,4 +1,4 @@
-# Release verification — October 17, 2026
+# Release verification — October 16, 2026
 
 Verified for local/portfolio use. This is a bounded, single-process video library,
 not a claim of unrestricted multi-tenant production readiness.
@@ -55,11 +55,14 @@ follow-ups; no universal matching or accuracy guarantee is made.
 
 No new AWS resources were provisioned. The existing 512 MB Detour preview
 cannot fit the real CLIP worker (over 1 GB observed) or supply durable media
-storage. Hosting is pending suitable authorized capacity. Public GitHub
-publication awaits the user's visibility choice.
+storage. Hosting is pending suitable authorized capacity. Source is public at
+[ThanhMinh12/SceneSeek](https://github.com/ThanhMinh12/SceneSeek), and the portfolio
+links to it without claiming a hosted demo exists.
 
-Dockerfile and CI builds are prepared, but Docker Desktop is unavailable in
-this WSL environment; no full local container-build verification is claimed.
+Python/native tests and the React build pass in GitHub Actions. Container builds
+and non-root startup checks run there because Docker Desktop is unavailable in
+this WSL environment; inspect the linked workflow before claiming a particular
+container check has passed.
 
 ## Reproduce
 

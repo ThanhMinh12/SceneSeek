@@ -1,5 +1,7 @@
 # SceneSeek
 
+[![Verify](https://github.com/ThanhMinh12/SceneSeek/actions/workflows/ci.yml/badge.svg)](https://github.com/ThanhMinh12/SceneSeek/actions/workflows/ci.yml)
+
 SceneSeek is a multimodal video search engine for finding the moment you can
 picture but cannot locate. It indexes timestamped video frames into a shared
 CLIP embedding space and accepts three kinds of query:
@@ -11,6 +13,10 @@ CLIP embedding space and accepts three kinds of query:
 
 Search results link directly to the matching timestamp. Video ingestion runs in
 the background and exposes progress through a job API.
+
+Real text/image and variable-speed clip retrieval are verified locally. Public
+hosting is pending suitable existing AWS capacity; see the
+[release report](docs/RELEASE-READINESS.md).
 
 ## Architecture
 
@@ -54,7 +60,8 @@ CUDA-enabled PyTorch image for GPU inference.
 
 ## Develop locally
 
-Prerequisites: Python 3.10+, Node 20+, CMake 3.20+, a C++20 compiler, and FFmpeg.
+Prerequisites: Python 3.11, Node 22.12+, CMake 3.20+, a C++20 compiler, and FFmpeg.
+The frozen CPU runtime is verified on Linux x86-64.
 
 ```bash
 # Native retrieval core
@@ -63,7 +70,7 @@ cmake --build build
 ctest --test-dir build --output-on-failure
 
 # API
-python -m venv .venv
+python3.11 -m venv .venv
 source .venv/bin/activate
 pip install --no-deps -r backend/requirements.lock
 SCENESEEK_NATIVE_LIBRARY="$PWD/build/libsceneseek_core.so" \
@@ -71,7 +78,7 @@ SCENESEEK_NATIVE_LIBRARY="$PWD/build/libsceneseek_core.so" \
 
 # Web app, in another shell
 cd frontend
-npm install
+npm ci
 npm run dev
 ```
 

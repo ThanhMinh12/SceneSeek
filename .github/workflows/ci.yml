@@ -58,5 +58,19 @@ jobs:
         with:
           context: .
           push: false
+          load: true
+          tags: sceneseek:ci
           cache-from: type=gha
           cache-to: type=gha,mode=max
+      - name: Start the non-root image and verify API and frontend
+        run: |
+          docker run --detach --name sceneseek-ci --publish 127.0.0.1:8000:8000 sceneseek:ci
+          trap 'docker logs sceneseek-ci; docker stop sceneseek-ci >/dev/null' EXIT
+          for attempt in $(seq 1 60); do
+            if curl --fail --silent http://127.0.0.1:8000/api/health >/dev/null; then break; fi
+            sleep 2
+          done
+          curl --fail --silent http://127.0.0.1:8000/api/health
+          curl --fail --silent http://127.0.0.1:8000/ >/dev/null
+          test "$(docker exec sceneseek-ci id -u)" = "10001"
+          docker exec sceneseek-ci python -c "from pathlib import Path; assert Path('/data/.session-secret').stat().st_mode & 0o077 == 0"
