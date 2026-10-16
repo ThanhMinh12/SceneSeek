@@ -59,10 +59,12 @@ storage. Hosting is pending suitable authorized capacity. Source is public at
 [ThanhMinh12/SceneSeek](https://github.com/ThanhMinh12/SceneSeek), and the portfolio
 links to it without claiming a hosted demo exists.
 
-Python/native tests and the React build pass in GitHub Actions. Container builds
-and non-root startup checks run there because Docker Desktop is unavailable in
-this WSL environment; inspect the linked workflow before claiming a particular
-container check has passed.
+Python/native tests, the React build, the full container build and non-root
+startup checks pass in [GitHub Actions](https://github.com/ThanhMinh12/SceneSeek/actions/runs/38979950518).
+The image serves both API and frontend, runs as UID 10001, and creates a private
+session-secret file. Real model retrieval is separately verified by the native
+regression above; the container startup test is not an inference benchmark.
+Docker Desktop remains unavailable locally.
 
 ## Reproduce
 
