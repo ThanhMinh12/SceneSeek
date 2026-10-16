@@ -1,0 +1,23 @@
+services:
+  sceneseek:
+    build: .
+    ports:
+      - "127.0.0.1:8000:8000"
+    environment:
+      SCENESEEK_EMBEDDER: ${SCENESEEK_EMBEDDER:-clip}
+      SCENESEEK_CLIP_MODEL: ${SCENESEEK_CLIP_MODEL:-openai/clip-vit-base-patch32}
+      SCENESEEK_DEVICE: ${SCENESEEK_DEVICE:-auto}
+      SCENESEEK_COOKIE_SECURE: ${SCENESEEK_COOKIE_SECURE:-false}
+      SCENESEEK_SESSION_SECRET: ${SCENESEEK_SESSION_SECRET:-}
+      SCENESEEK_MAX_VIDEO_SECONDS: ${SCENESEEK_MAX_VIDEO_SECONDS:-600}
+      SCENESEEK_MAX_PENDING_JOBS: ${SCENESEEK_MAX_PENDING_JOBS:-2}
+      SCENESEEK_MAX_STORAGE_MB: ${SCENESEEK_MAX_STORAGE_MB:-2048}
+    volumes:
+      - sceneseek-data:/data
+      - model-cache:/home/sceneseek/.cache/huggingface
+    restart: unless-stopped
+
+volumes:
+  sceneseek-data:
+  model-cache:
+

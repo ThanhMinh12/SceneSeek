@@ -1,0 +1,4 @@
+torch==2.7.1
+transformers>=4.57,<5
+safetensors==0.8.0
+
