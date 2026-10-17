@@ -64,7 +64,7 @@ def install_security(app: FastAPI, data_dir: Path, prefix: str, origins: tuple[s
         response.headers["Content-Security-Policy"] = (
             "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
             "font-src 'self' https://fonts.gstatic.com; "
-            "img-src 'self' data:; media-src 'self' blob:; connect-src 'self'; "
+            "img-src 'self' data:; media-src 'self' blob:; connect-src 'self' https://huggingface.co; "
             "object-src 'none'; base-uri 'self'; frame-ancestors 'none'"
         )
         if request.url.path == "/api/docs":

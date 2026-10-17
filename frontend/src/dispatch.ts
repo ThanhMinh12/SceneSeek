@@ -19,4 +19,3 @@ export async function runDispatch<T>(dispatch: Dispatch): Promise<T> {
     throw error;
   }
 }
-

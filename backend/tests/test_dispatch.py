@@ -11,7 +11,6 @@ def test_capabilities_are_single_use():
     with pytest.raises(ValueError):
         registry.claim(token)
 
-
 def test_foreign_owner_cannot_cancel():
     expired = []
     registry = DispatchRegistry()

@@ -15,9 +15,10 @@ Search results link directly to the matching timestamp. Video ingestion runs in
 the background and exposes progress through a job API.
 
 [Try the live demo](https://huggingface.co/spaces/ThanhMinh12/SceneSeek).
-The free ZeroGPU/Gradio demo runs the real CLIP and C++ retrieval pipeline with
-short uploads and temporary per-session libraries. It is separate from the
-full React/FastAPI app below. Queues and daily GPU limits apply; use only
+The free ZeroGPU deployment runs the actual React/TypeScript interface,
+FastAPI library/search/media routes, and real CLIP/C++ pipeline. Gradio Server
+mode handles browser-dispatched GPU work behind the React UI. Libraries are
+temporary, with up to three 60-second/40 MB videos. Queues and daily limits apply; use only
 non-sensitive media. See [hosted setup and limits](hf_space/README.md) and the
 [release report](docs/RELEASE-READINESS.md).
 

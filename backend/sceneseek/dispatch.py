@@ -40,4 +40,3 @@ class DispatchRegistry:
         entry[3].cancel()
         entry[2]()
         return True
-

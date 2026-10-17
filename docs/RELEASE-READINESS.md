@@ -55,13 +55,15 @@ follow-ups; no universal matching or accuracy guarantee is made.
 
 No new AWS resources were provisioned. The existing 512 MB Detour preview
 cannot fit the real CLIP worker (over 1 GB observed) or supply durable media
-storage. The full React/FastAPI stack still requires suitable hosting.
+storage. The React/FastAPI stack is now configured on the existing free ZeroGPU
+Space; durable production storage remains a separate requirement.
 
-The user subsequently authorized free non-AWS hosting. A separate
-[live Gradio demo](https://huggingface.co/spaces/ThanhMinh12/SceneSeek) now runs
+The user subsequently authorized free non-AWS hosting. The
+[live application](https://huggingface.co/spaces/ThanhMinh12/SceneSeek) runs
 on free ZeroGPU (confirmed requested and actual hardware `zero-a10g`, no paid
-plan/hardware/credits enabled). The original React/FastAPI app and CPU lock
-remain intact. The hosted profile uses Python 3.12, PyTorch 2.8 and
+plan/hardware/credits enabled). The actual React UI and private FastAPI routes
+now run through Gradio Server mode, not the former widget interface. The CPU
+lock remains intact. The hosted profile uses Python 3.12, PyTorch 2.8 and
 Transformers 5.20.1; projected feature extraction supports both Transformers
 4 and 5 with regression coverage.
 
@@ -72,12 +74,24 @@ search the first session's library. The test library was cleared afterward.
 Five hosted-adapter tests cover isolation, targeted deletion, capacity, empty
 uploads and empty-library search. This is a demo, not a general quality claim.
 
-Hosted libraries are limited to three 60-second/40 MB videos per session,
-12 working sessions, and a 2 GB working-storage threshold. Gradio adds a
-bounded queue and upload limit. Working sessions and registered cache files
-expire after an hour or restart; public preview URLs are shareable capability
-links, **not** the full-stack application's authenticated media routes.
-The UI explicitly asks for non-sensitive uploads. See
+The hosted React app retains FastAPI uploads, library/job polling, search
+preparation, thumbnails, range streaming and deletion. React dispatches opaque,
+single-use capabilities through `@gradio/client`, preserving visitor ZeroGPU
+quota headers. Four registry tests cover reuse denial, capacity, foreign
+cancellation and expiry; a full-stack adapter test covers owned dispatch and
+search. The combined local suites pass **40 tests**.
+
+Local real-model React checks passed: upload/indexing, text/image/2× clip
+retrieval, real video playback, foreign media denial, deletion and four widths
+(320–1440 px). This supersedes the former widget demo, retained in
+`hf_space/app.py` as a rollback option.
+
+Libraries are limited to three 60-second/40 MB videos and a 2 GB working-storage
+threshold. Finished/failed videos expire after an hour (checked every five
+minutes), or are lost on restart. Media routes retain signed-session ownership;
+public Gradio file uploads/downloads and run history are disabled in the hosted
+profile. Unused capabilities expire after three minutes and release capacity.
+Use non-sensitive media: browser sessions are not account login. See
 [the hosted profile](../hf_space/README.md) for reproduction and limitations.
 
 Python/native tests, the React build, the full container build and non-root
