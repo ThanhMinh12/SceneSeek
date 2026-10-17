@@ -1,0 +1,4 @@
+cmake
+g++
+ffmpeg
+libglib2.0-0

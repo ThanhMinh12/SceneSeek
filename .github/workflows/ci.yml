@@ -33,6 +33,8 @@ jobs:
       - run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release && cmake --build build
       - run: python -m pytest
         working-directory: backend
+      - name: Hosted demo isolation and limit tests
+        run: PYTHONPATH=backend:. python -m pytest hf_space/test_demo.py -q
 
   web:
     runs-on: ubuntu-latest

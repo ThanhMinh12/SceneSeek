@@ -55,9 +55,30 @@ follow-ups; no universal matching or accuracy guarantee is made.
 
 No new AWS resources were provisioned. The existing 512 MB Detour preview
 cannot fit the real CLIP worker (over 1 GB observed) or supply durable media
-storage. Hosting is pending suitable authorized capacity. Source is public at
-[ThanhMinh12/SceneSeek](https://github.com/ThanhMinh12/SceneSeek), and the portfolio
-links to it without claiming a hosted demo exists.
+storage. The full React/FastAPI stack still requires suitable hosting.
+
+The user subsequently authorized free non-AWS hosting. A separate
+[live Gradio demo](https://huggingface.co/spaces/ThanhMinh12/SceneSeek) now runs
+on free ZeroGPU (confirmed requested and actual hardware `zero-a10g`, no paid
+plan/hardware/credits enabled). The original React/FastAPI app and CPU lock
+remain intact. The hosted profile uses Python 3.12, PyTorch 2.8 and
+Transformers 5.20.1; projected feature extraction supports both Transformers
+4 and 5 with regression coverage.
+
+Hosted real-CLIP/C++ API checks passed: 30-second upload/indexing, text search,
+image retrieval at **12 s** (cosine **0.9978**), and a double-speed reference
+matched **10–18.08 s at 2×** (cosine **0.9950**). A second session could not
+search the first session's library. The test library was cleared afterward.
+Five hosted-adapter tests cover isolation, targeted deletion, capacity, empty
+uploads and empty-library search. This is a demo, not a general quality claim.
+
+Hosted libraries are limited to three 60-second/40 MB videos per session,
+12 working sessions, and a 2 GB working-storage threshold. Gradio adds a
+bounded queue and upload limit. Working sessions and registered cache files
+expire after an hour or restart; public preview URLs are shareable capability
+links, **not** the full-stack application's authenticated media routes.
+The UI explicitly asks for non-sensitive uploads. See
+[the hosted profile](../hf_space/README.md) for reproduction and limitations.
 
 Python/native tests, the React build, the full container build and non-root
 startup checks pass in [GitHub Actions](https://github.com/ThanhMinh12/SceneSeek/actions/runs/38979950518).

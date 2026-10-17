@@ -98,6 +98,9 @@ class ClipEmbedder:
         inputs = {key: value.to(self._device) for key, value in inputs.items()}
         with self._lock, self._torch.inference_mode():
             values = self._model.get_text_features(**inputs)
+        # Transformers 4 returns the projected tensor directly; 5 returns a
+        # ModelOutput whose pooler_output is already projected to CLIP space.
+        values = getattr(values, "pooler_output", values)
         return _normalize(values.detach().cpu().float().numpy())
 
     def embed_images(self, images: Sequence[Image.Image]) -> FloatArray:
@@ -105,6 +108,7 @@ class ClipEmbedder:
         inputs = {key: value.to(self._device) for key, value in inputs.items()}
         with self._lock, self._torch.inference_mode():
             values = self._model.get_image_features(**inputs)
+        values = getattr(values, "pooler_output", values)
         return _normalize(values.detach().cpu().float().numpy())
 
 

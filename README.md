@@ -14,8 +14,11 @@ CLIP embedding space and accepts three kinds of query:
 Search results link directly to the matching timestamp. Video ingestion runs in
 the background and exposes progress through a job API.
 
-Real text/image and variable-speed clip retrieval are verified locally. Public
-hosting is pending suitable existing AWS capacity; see the
+[Try the live demo](https://huggingface.co/spaces/ThanhMinh12/SceneSeek).
+The free ZeroGPU/Gradio demo runs the real CLIP and C++ retrieval pipeline with
+short uploads and temporary per-session libraries. It is separate from the
+full React/FastAPI app below. Queues and daily GPU limits apply; use only
+non-sensitive media. See [hosted setup and limits](hf_space/README.md) and the
 [release report](docs/RELEASE-READINESS.md).
 
 ## Architecture
