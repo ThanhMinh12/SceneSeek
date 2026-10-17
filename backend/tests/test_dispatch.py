@@ -38,4 +38,3 @@ def test_abandoned_dispatch_expires():
     assert expired.wait(1)
     with pytest.raises(ValueError):
         registry.claim(token)
-

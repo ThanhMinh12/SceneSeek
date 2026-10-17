@@ -85,6 +85,11 @@ Local real-model React checks passed: upload/indexing, text/image/2× clip
 retrieval, real video playback, foreign media denial, deletion and four widths
 (320–1440 px). This supersedes the former widget demo, retained in
 `hf_space/app.py` as a rollback option.
+The same workflow passed against the public hosted React app using the
+authorized free HF account. Real GPU indexing/search additionally passed inside
+the official HF iframe, retaining a secure, partitioned browser session. The
+final deployed bundle verifies exactly one session bootstrap. Anonymous run
+limits were reached during QA and are not represented as unlimited usage.
 
 Libraries are limited to three 60-second/40 MB videos and a 2 GB working-storage
 threshold. Finished/failed videos expire after an hour (checked every five
