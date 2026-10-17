@@ -111,7 +111,7 @@ export default function App() {
 
   useEffect(() => {
     void refresh();
-    void fetch('/api/runtime').then(r => r.json()).then(r => {setHosted(Boolean(r.queued_inference)); setFrameInterval(r.frame_interval_seconds ?? 2);}).catch(() => undefined);
+    void api.runtime().then(r => {setHosted(Boolean(r.queued_inference)); setFrameInterval(r.frame_interval_seconds ?? 2);}).catch(() => undefined);
     const timer = window.setInterval(() => void refresh(), 5000);
     return () => window.clearInterval(timer);
   }, []);
