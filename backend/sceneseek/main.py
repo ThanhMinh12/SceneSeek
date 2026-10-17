@@ -24,6 +24,9 @@ from .native import SimilarityIndex
 from .schemas import HealthResponse, SearchResponse, TextSearchRequest
 from .service import SceneSeekService
 from .security import install_security, owner_id
+from .dispatch import DispatchRegistry
+from fastapi.responses import JSONResponse
+from pydantic import BaseModel, Field
 
 
 VIDEO_EXTENSIONS = {".mp4", ".mov", ".mkv", ".webm", ".avi", ".m4v"}
@@ -53,13 +56,18 @@ async def _save_upload(upload: UploadFile, destination: Path, limit: int) -> int
     return written
 
 
-def create_app(settings: Settings | None = None) -> FastAPI:
+class DispatchCancellation(BaseModel):
+    token: str = Field(max_length=128)
+
+
+def create_app(settings: Settings | None = None, *, app_factory=FastAPI,
+               queued_inference: bool = False, embedder=None) -> FastAPI:
     config = settings or Settings.from_env()
     config.prepare()
     database = Database(config.database_path)
     database.fail_interrupted_jobs()
     native_index = SimilarityIndex(config.native_library)
-    lazy_embedder = LazyEmbedder(config.embedder, config.clip_model, config.device, config.clip_revision)
+    lazy_embedder = embedder or LazyEmbedder(config.embedder, config.clip_model, config.device, config.clip_revision)
     catalog = Catalog(config.index_dir, database, native_index)
     service = SceneSeekService(config, database, catalog, lazy_embedder)
     slots = threading.BoundedSemaphore(config.max_pending_jobs)
@@ -97,7 +105,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         finally:
             searches.release()
 
-    app = FastAPI(
+    app = app_factory(
         title="SceneSeek API",
         version=__version__,
         description="Multimodal video retrieval with timestamp and sequence matching.",
@@ -110,6 +118,40 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.state.service = service
     app.state.native_index = native_index
     app.state.embedder = lazy_embedder
+    dispatches = DispatchRegistry(max_pending=8)
+
+    @app.get("/api/runtime")
+    async def runtime(request: Request):
+        owner_id(request)
+        return {"queued_inference": queued_inference, "temporary": queued_inference,
+                "max_video_seconds": config.max_video_seconds,
+                "max_upload_mb": config.max_upload_bytes // 1024**2,
+                "frame_interval_seconds": config.frame_interval_seconds}
+
+    @app.post("/api/dispatch/cancel", status_code=204, response_class=Response)
+    async def cancel_dispatch(request: Request, cancellation: DispatchCancellation):
+        dispatches.cancel(cancellation.token, owner_id(request))
+        return Response(status_code=204)
+
+    if queued_inference:
+        @app.api(name="run_index", concurrency_id="inference", concurrency_limit=1)
+        def run_index(token: str) -> dict:
+            job_id, video_id = dispatches.claim(token)
+            index_job(job_id, video_id)
+            return {"id": job_id, "status": database.get_job(job_id)["status"]}
+
+        @app.api(name="run_search", concurrency_id="inference", concurrency_limit=1)
+        def run_search(token: str) -> dict:
+            mode, query, top_k, owner = dispatches.claim(token)
+            started = time.perf_counter()
+            try:
+                function = {"text": service.text_search, "image": service.image_search, "clip": service.clip_search}[mode]
+                results = guarded_search(function, query, top_k, owner)
+                return SearchResponse(query_type=mode, results=results,
+                                      elapsed_ms=(time.perf_counter()-started)*1000).model_dump()
+            finally:
+                if mode != "text":
+                    query.unlink(missing_ok=True)
     install_security(app, config.data_dir, "SCENESEEK", config.cors_origins, config.max_upload_bytes)
     app.add_middleware(
         CORSMiddleware,
@@ -141,6 +183,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         title: Annotated[str | None, Query(max_length=120)] = None,
     ) -> dict:
         original_name = file.filename or "video.mp4"
+        if queued_inference and len(database.list_videos(owner_id(request))) >= 3:
+            await file.close()
+            raise HTTPException(status_code=429, detail="Three videos per demo session. Delete a video to add another.")
         extension = Path(original_name).suffix.lower()
         if extension not in VIDEO_EXTENSIONS:
             await file.close()
@@ -162,8 +207,21 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 original_name, destination, owner_id(request),
             )
             job = database.create_job(job_id, video_id)
-            executor.submit(index_job, job_id, video_id)
-            return {"video": public_video(video), "job": job}
+            result = {"video": public_video(video), "job": job}
+            if queued_inference:
+                def expired():
+                    database.update_job(job_id, status="failed", message="Inference could not start", error="The browser queue could not start this request. Upload it again.")
+                    database.update_video(video_id, status="failed", error="Inference request expired")
+                    slots.release()
+                try:
+                    token = dispatches.register(owner_id(request), (job_id, video_id), expired)
+                except ValueError as exc:
+                    database.delete_video(video_id)
+                    raise HTTPException(status_code=429, detail=str(exc)) from exc
+                result["dispatch"] = {"endpoint": "/run_index", "token": token}
+            else:
+                executor.submit(index_job, job_id, video_id)
+            return result
         except Exception:
             destination.unlink(missing_ok=True)
             slots.release()
@@ -214,6 +272,12 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     @app.post("/api/search/text", response_model=SearchResponse)
     def text_search(request: Request, query: TextSearchRequest) -> SearchResponse:
+        if queued_inference:
+            try:
+                token = dispatches.register(owner_id(request), ("text", query.query, query.top_k, owner_id(request)))
+            except ValueError as exc:
+                raise HTTPException(status_code=429, detail=str(exc)) from exc
+            return JSONResponse({"dispatch": {"endpoint": "/run_search", "token": token}})
         started = time.perf_counter()
         try:
             results = guarded_search(service.text_search, query.query, query.top_k, owner_id(request))
@@ -237,6 +301,13 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             raise HTTPException(status_code=415, detail="Unsupported query file type")
         path = config.temp_dir / f"{uuid.uuid4().hex}{extension}"
         await _save_upload(upload, path, config.max_query_bytes)
+        if queued_inference:
+            try:
+                token = dispatches.register(owner, (query_type, path, top_k, owner), lambda: path.unlink(missing_ok=True))
+            except ValueError as exc:
+                path.unlink(missing_ok=True)
+                raise HTTPException(status_code=429, detail=str(exc)) from exc
+            return JSONResponse({"dispatch": {"endpoint": "/run_search", "token": token}})
         started = time.perf_counter()
         try:
             if query_type == "image":
@@ -274,8 +345,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         if assets.is_dir():
             app.mount("/assets", StaticFiles(directory=assets), name="assets")
 
-        @app.get("/{requested_path:path}", include_in_schema=False)
-        def frontend(requested_path: str) -> FileResponse:
+        @app.get("/" if queued_inference else "/{requested_path:path}", include_in_schema=False)
+        def frontend(requested_path: str = "") -> FileResponse:
             if requested_path.startswith("api/"):
                 raise HTTPException(status_code=404, detail="Endpoint not found")
             candidate = (config.frontend_dir / requested_path).resolve()

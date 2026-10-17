@@ -15,6 +15,7 @@ def owner_id(request: Request) -> str:
 
 
 def install_security(app: FastAPI, data_dir: Path, prefix: str, origins: tuple[str, ...], max_body: int) -> None:
+    hosted = os.getenv(f"{prefix}_HOSTED", "false").lower() == "true"
     secret = os.getenv(f"{prefix}_SESSION_SECRET", "").strip()
     if not secret:
         data_dir.mkdir(parents=True, exist_ok=True)
@@ -31,12 +32,16 @@ def install_security(app: FastAPI, data_dir: Path, prefix: str, origins: tuple[s
         raise ValueError(f"{prefix}_SESSION_SECRET must contain at least 32 characters")
     app.add_middleware(
         SessionMiddleware, secret_key=secret, session_cookie=prefix.lower() + "_session",
-        max_age=7 * 24 * 3600, same_site="lax",
+        max_age=7 * 24 * 3600, same_site="none" if hosted else "lax",
         https_only=os.getenv(f"{prefix}_COOKIE_SECURE", "false").lower() == "true",
     )
 
     @app.middleware("http")
     async def browser_security(request: Request, call_next):
+        if hosted and (request.url.path == '/gradio_api/upload' or request.url.path.startswith('/gradio_api/file')):
+            # This profile transports only opaque dispatch tokens through Gradio.
+            # All media uses our bounded, owned REST routes instead.
+            return JSONResponse({'detail': 'Use the private application media routes'}, status_code=404)
         if request.method not in {"GET", "HEAD", "OPTIONS"}:
             origin = request.headers.get("origin")
             own_origin = f"{request.url.scheme}://{request.url.netloc}"
@@ -57,7 +62,8 @@ def install_security(app: FastAPI, data_dir: Path, prefix: str, origins: tuple[s
         response.headers["Referrer-Policy"] = "same-origin"
         response.headers["X-Frame-Options"] = "DENY"
         response.headers["Content-Security-Policy"] = (
-            "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; "
+            "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+            "font-src 'self' https://fonts.gstatic.com; "
             "img-src 'self' data:; media-src 'self' blob:; connect-src 'self'; "
             "object-src 'none'; base-uri 'self'; frame-ancestors 'none'"
         )
@@ -71,5 +77,16 @@ def install_security(app: FastAPI, data_dir: Path, prefix: str, origins: tuple[s
             )
         if request.url.path.startswith("/api/"):
             response.headers["Cache-Control"] = "no-store"
+        if hosted:
+            # The official Space page embeds this app. Keep all other frame
+            # origins blocked, and partition the secure cookie for that frame.
+            del response.headers["X-Frame-Options"]
+            response.headers["Content-Security-Policy"] = response.headers["Content-Security-Policy"].replace(
+                "frame-ancestors 'none'", "frame-ancestors 'self' https://huggingface.co"
+            )
+            response.raw_headers = [
+                (key, value + b"; Partitioned" if key == b"set-cookie" and (prefix.lower()+"_session=").encode() in value else value)
+                for key, value in response.raw_headers
+            ]
         return response
 

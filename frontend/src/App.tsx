@@ -84,6 +84,8 @@ function Player({ result, onClose }: { result: SearchResult; onClose: () => void
 
 export default function App() {
   const [health, setHealth] = useState<Health | null>(null);
+  const [hosted, setHosted] = useState(false);
+  const [frameInterval, setFrameInterval] = useState(2);
   const [videos, setVideos] = useState<Video[]>([]);
   const [mode, setMode] = useState<SearchMode>("text");
   const [query, setQuery] = useState("");
@@ -109,6 +111,7 @@ export default function App() {
 
   useEffect(() => {
     void refresh();
+    void fetch('/api/runtime').then(r => r.json()).then(r => {setHosted(Boolean(r.queued_inference)); setFrameInterval(r.frame_interval_seconds ?? 2);}).catch(() => undefined);
     const timer = window.setInterval(() => void refresh(), 5000);
     return () => window.clearInterval(timer);
   }, []);
@@ -182,6 +185,7 @@ export default function App() {
       </header>
 
       <main id="top">
+        {hosted && <p style={{padding:'16px 0',fontSize:13}}>Free hosted demo · Three videos, up to 60 seconds / 40 MB each. GPU queues and daily limits apply. Use non-sensitive media; libraries expire after an hour.</p>}
         <section className="hero" id="search">
           <div className="eyebrow"><span>01</span> MULTIMODAL VIDEO RETRIEVAL</div>
           <h1>Find the <em>exact</em><br />moment.</h1>
@@ -209,7 +213,7 @@ export default function App() {
             </div>
             <div className="search-meta">
               <span>{readyVideos.length} video{readyVideos.length === 1 ? "" : "s"} indexed</span>
-              <span>Frames sampled every 2 seconds</span>
+              <span>Frames sampled every {frameInterval} second{frameInterval === 1 ? '' : 's'}</span>
               <span>{health?.embedder === "clip" ? "CLIP · PyTorch" : "Deterministic test model"}</span>
             </div>
           </form>

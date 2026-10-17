@@ -34,7 +34,9 @@ jobs:
       - run: python -m pytest
         working-directory: backend
       - name: Hosted demo isolation and limit tests
-        run: PYTHONPATH=backend:. python -m pytest hf_space/test_demo.py -q
+        run: |
+          pip install gradio==6.30.0
+          PYTHONPATH=backend:. python -m pytest hf_space/test_demo.py hf_space/test_fullstack.py -q
 
   web:
     runs-on: ubuntu-latest

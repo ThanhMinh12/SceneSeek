@@ -1,4 +1,5 @@
 import type { Health, Job, SearchMode, SearchResponse, Video } from "./types";
+import { runDispatch, type Dispatch } from "./dispatch";
 
 async function parse<T>(response: Response): Promise<T> {
   if (response.ok) return (await response.json()) as T;
@@ -23,9 +24,10 @@ export const api = {
   async uploadVideo(file: File): Promise<{ video: Video; job: Job }> {
     const form = new FormData();
     form.append("file", file);
-    return fetch("/api/videos", { method: "POST", body: form }).then((response) =>
-      parse<{ video: Video; job: Job }>(response),
-    );
+    const result = await fetch("/api/videos", { method: "POST", body: form }).then((response) =>
+      parse<{ video: Video; job: Job; dispatch?: Dispatch }>(response));
+    if (result.dispatch) void runDispatch(result.dispatch).catch(() => undefined);
+    return result;
   },
 
   async removeVideo(id: string): Promise<void> {
@@ -35,18 +37,20 @@ export const api = {
 
   async search(mode: SearchMode, query: string, file: File | null): Promise<SearchResponse> {
     if (mode === "text") {
-      return fetch("/api/search/text", {
+      const result = await fetch("/api/search/text", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ query, top_k: 12 }),
-      }).then((response) => parse<SearchResponse>(response));
+      }).then((response) => parse<SearchResponse | { dispatch: Dispatch }>(response));
+      return "dispatch" in result ? runDispatch<SearchResponse>(result.dispatch) : result;
     }
     if (!file) throw new Error(`Choose an ${mode === "image" ? "image" : "example clip"} first`);
     const form = new FormData();
     form.append("file", file);
-    return fetch(`/api/search/${mode}?top_k=12`, { method: "POST", body: form }).then(
-      (response) => parse<SearchResponse>(response),
+    const result = await fetch(`/api/search/${mode}?top_k=12`, { method: "POST", body: form }).then(
+      (response) => parse<SearchResponse | { dispatch: Dispatch }>(response),
     );
+    return "dispatch" in result ? runDispatch<SearchResponse>(result.dispatch) : result;
   },
 };
 
