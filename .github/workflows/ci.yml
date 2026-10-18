@@ -11,10 +11,13 @@ permissions:
 jobs:
   native:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        sanitizers: ['OFF', 'ON']
     steps:
       - uses: actions/checkout@v4
       - name: Configure
-        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Debug -DSCENESEEK_SANITIZERS=${{ matrix.sanitizers }}
       - name: Build
         run: cmake --build build
       - name: Test
