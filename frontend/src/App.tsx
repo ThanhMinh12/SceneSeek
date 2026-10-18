@@ -155,7 +155,7 @@ export default function App() {
 
   return <div className="app-shell">
     <a className="skip-link" href="#workspace">Skip to workspace</a>
-    <header className="topbar"><a className="brand" href="#workspace"><img className="brand-logo" src="/brandmark.svg" width="36" height="36" alt="" />SceneSeek</a><div className="top-actions">
+    <header className="topbar"><a className="brand" href="#workspace"><img className="brand-logo" src="/assets/brandmark.svg" width="36" height="36" alt="" />SceneSeek</a><div className="top-actions">
       {videos.length > 0 && <button className="quiet-button" aria-label="Video library" aria-expanded={libraryOpen} onClick={() => setLibraryOpen(!libraryOpen)}>Videos · {videos.length}</button>}
       <details className="help-menu"><summary>Help</summary><div><p>Choose a video. Once it is prepared, describe a scene and press Search. You can switch to an image or clip when needed.</p>{runtime && <p>MP4, MOV, MKV, WebM, AVI, M4V · Up to {runtime.max_video_seconds}s / {runtime.max_upload_mb} MB each.</p>}{runtime?.queued_inference && <p>Free GPU demo. Up to 3 videos. Queues and daily limits apply. Files expire after an hour; use non-sensitive videos.</p>}<a href="https://github.com/ThanhMinh12/SceneSeek" target="_blank" rel="noreferrer">Source code ↗</a><a href="/api/docs">API documentation ↗</a></div></details>
     </div></header>

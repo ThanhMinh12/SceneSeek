@@ -93,7 +93,7 @@ def main():
         expect(page.locator('.welcome-description')).to_have_text('Find the scene you remember with a description, an image, or a clip.')
         expect(page.locator('.brand-logo')).to_have_js_property('complete', True)
         assert page.locator('.brand-logo').evaluate('(node) => node.naturalWidth') > 0
-        expect(page.locator('link[rel="icon"]')).to_have_attribute('href', '/brandmark.svg')
+        expect(page.locator('link[rel="icon"]')).to_have_attribute('href', '/assets/brandmark.svg')
         expect(page.get_by_role('button', name='Choose video', exact=True)).to_be_visible()
         expect(page.get_by_role('textbox', name='Describe the scene to find')).to_have_count(0)
         expect(page.locator('aside')).to_have_count(0)
