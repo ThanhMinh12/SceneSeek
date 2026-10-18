@@ -14,7 +14,10 @@ short_description: Find video moments with text, an image, or a reference clip.
 
 # SceneSeek · free demo
 
-Real CLIP embeddings and the project's C++20 similarity/sequence matcher.
+Real CLIP embeddings and the project's C++20 persistent retrieval engine:
+memory-mapped native indexes, bounded caching, parallel ranking/deduplication,
+and timestamp-aware sequence matching. `/api/health` reports the actual
+`retrieval_engine: cpp` and `index_storage: ssidx-v1`; startup requires native code.
 Upload up to three videos (60 seconds / 40 MB each) per browser session.
 Text and image searches return moments; clip searches also estimate playback rate.
 
@@ -40,8 +43,9 @@ and `packages.txt`. Include `hf_space/*.py`, `backend/sceneseek/*.py`,
 `cpp/`, `CMakeLists.txt`, and compiled `frontend/dist/`. Build the frontend with
 `npm ci` and `npm run build` in `frontend/` before uploading those static assets.
 Do not upload local data, secrets, models, or native builds.
-Select **ZeroGPU**, never a paid accelerator. The app compiles its small C++
-library during startup and downloads the pinned public CLIP checkpoint.
+Select **ZeroGPU**, never a paid accelerator. The app compiles the C++ engine
+and CLI during startup and downloads the pinned public CLIP checkpoint. This
+upgrade adds no dependencies or changes to the GPU/model runtime.
 
 For a local CPU smoke test (not ZeroGPU performance): install the hosted
 requirements with a CPU PyTorch wheel, then run

@@ -1,5 +1,33 @@
 # Release verification — October 16, 2026
 
+## C++ retrieval engine upgrade
+
+Production retrieval now uses an owning C++20 engine, not just two numeric
+kernels. C++ manages versioned `.ssidx` serialization, normalized vectors,
+checksummed/memory-mapped reads, a byte-budgeted LRU, parallel shard retrieval,
+global ranking/deduplication, physical-time query resampling, and sequence fits.
+Python retains CLIP inference, media ingestion, session authorization, SQLite,
+and REST response formatting. The C ABI is exception-safe and owns its handle;
+NumPy is an offline reference path, never a silent production replacement.
+
+Verified locally: four CTest targets in both Release and ASan/UBSan builds,
+56 backend tests plus seven hosted-adapter tests, Python/native parity,
+authorization and legacy-migration tests, bounded cache/bypass and concurrent
+replacement tests. The CLI runs without Python and reports measured retrieval
+timings and cache settings; see [benchmarks](NATIVE-BENCHMARKS.md).
+
+A genuine CPU CLIP/API replay with the new native engine returned the source
+image at **12.0 s**, and matched the **10.0–18.0 s** reference span at 1x,
+**10.0–17.98 s** at .5x, and **10.0–18.08 s** at 2x. Text retrieval returned
+results, browser-preview range requests succeeded, and a stranger session
+could not access the library or media. The same real-model replay passed in
+Chromium through the production React build, playing the 30-second result
+without a media error. This is one public Blender trailer
+fixture, not a general accuracy or latency claim.
+
+The prior release history below remains for provenance. The native upgrade's
+operational details supersede older descriptions of NumPy-owned indexes.
+
 Verified for local/portfolio use. This is a bounded, single-process video library,
 not a claim of unrestricted multi-tenant production readiness.
 

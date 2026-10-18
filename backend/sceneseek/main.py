@@ -67,8 +67,11 @@ def create_app(settings: Settings | None = None, *, app_factory=FastAPI,
     database = Database(config.database_path)
     database.fail_interrupted_jobs()
     native_index = SimilarityIndex(config.native_library)
+    if config.require_native and native_index.backend != 'cpp':
+        raise RuntimeError('The C++ catalog is required. Build the SceneSeek native library before starting.')
     lazy_embedder = embedder or LazyEmbedder(config.embedder, config.clip_model, config.device, config.clip_revision)
-    catalog = Catalog(config.index_dir, database, native_index)
+    catalog = Catalog(config.index_dir, database, native_index,
+                      cache_bytes=config.native_cache_mb * 1024**2, workers=config.native_search_threads)
     service = SceneSeekService(config, database, catalog, lazy_embedder)
     slots = threading.BoundedSemaphore(config.max_pending_jobs)
     searches = threading.BoundedSemaphore(1)
@@ -167,6 +170,8 @@ def create_app(settings: Settings | None = None, *, app_factory=FastAPI,
         return HealthResponse(
             version=__version__,
             similarity_backend=native_index.backend,
+            retrieval_engine=catalog.backend,
+            index_storage='ssidx-v1' if catalog.backend == 'cpp' else 'legacy-npz',
             embedder=config.embedder,
             model_loaded=lazy_embedder.loaded,
             indexed_videos=ready,

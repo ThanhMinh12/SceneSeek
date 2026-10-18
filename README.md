@@ -2,7 +2,7 @@
 
 [![Verify](https://github.com/ThanhMinh12/SceneSeek/actions/workflows/ci.yml/badge.svg)](https://github.com/ThanhMinh12/SceneSeek/actions/workflows/ci.yml)
 
-SceneSeek is a multimodal video search engine for finding the moment you can
+SceneSeek is a **C++20 video retrieval engine with a Python ML/API adapter** for finding the moment you can
 picture but cannot locate. It indexes timestamped video frames into a shared
 CLIP embedding space and accepts three kinds of query:
 
@@ -34,17 +34,40 @@ React + TypeScript                       Python + FastAPI
                                                       │ contiguous float32
                                                       ▼
                                        ┌─────────────────────────────┐
-                                       │ C++20 / CMake native core   │
-                                       │ top-k cosine retrieval      │
-                                       │ playback-rate sequence fit  │
+                                       │ C++20 / CMake search engine │
+                                       │ mmap indexes + bounded LRU  │
+                                       │ parallel ranking + dedup    │
+                                       │ timestamp/rate alignment    │
                                        └─────────────────────────────┘
 ```
 
-The C++ core is loaded through a small `ctypes` boundary. A NumPy implementation
-with identical semantics is retained as a portability fallback and test oracle.
-Indexes are immutable compressed arrays per video; SQLite stores the catalog and
-job lifecycle. See [the architecture notes](docs/ARCHITECTURE.md) for the data
-flow, matching algorithm, and scaling boundaries.
+The C++ engine owns index serialization, normalized vectors, memory-mapped reads,
+a byte-budgeted LRU, bounded parallel shard search, global ranking, temporal
+duplicate suppression, and complete timestamp-aware clip matching. Python keeps
+CLIP inference, media ingestion, authorization, SQLite, and REST response formatting.
+A small `ctypes` C ABI preserves the existing deployment without an extra binding
+dependency. NumPy code remains only as an offline fallback/test oracle; the hosted
+app and Docker require the full C++ engine. Existing `.npz` indexes migrate lazily
+to native `.ssidx` files without deleting the original archives.
+
+See [architecture](docs/ARCHITECTURE.md), [the native format/CLI](docs/NATIVE-ENGINE.md),
+and [measured benchmarks](docs/NATIVE-BENCHMARKS.md).
+
+## Standalone C++ tools
+
+The `sceneseek` executable has no Python or model-runtime dependency. It indexes
+**precomputed embeddings** and searches native files directly:
+
+```bash
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+cmake --build build
+build/sceneseek --help
+build/sceneseek benchmark 100000 512 10 4 256 2
+```
+
+Commands include `index`, `inspect`, `search`, `sequence`, and `benchmark`.
+The benchmark reports cold/warm timings, cache configuration, and Linux peak RSS;
+it does not measure CLIP inference or retrieval quality.
 
 ## Run with Docker
 
@@ -140,9 +163,11 @@ cosine throughput, not embedding latency or retrieval accuracy. See
 - One API process is intentional: in-process background jobs and model memory
   must not be duplicated across workers. A multi-instance deployment should move
   jobs to a durable queue and keep indexes in shared object storage.
-- The bundled catalog performs exact flat search. It is deterministic and fast
-  for a personal or team library; millions of frames should move to a memory-
-  mapped or approximate-nearest-neighbor index.
+- The native catalog performs exact flat search over memory-mapped shards.
+  `SCENESEEK_NATIVE_CACHE_MB` (default 64) bounds retained mappings/metadata,
+  not total process RSS or model memory. `SCENESEEK_NATIVE_THREADS` (default 2,
+  maximum 8) bounds shard parallelism. Larger libraries may need a larger cache
+  or an ANN index; benchmark the intended workload rather than assuming a speedup.
 - Catalogs, jobs, thumbnails, streams, search, and deletion are isolated by signed
   browser sessions. This is not an account/login system: clearing cookies loses
   access to a library. Keep `/data/.session-secret` persistent and set

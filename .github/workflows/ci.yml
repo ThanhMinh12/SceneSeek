@@ -13,11 +13,15 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        sanitizers: ['OFF', 'ON']
+        include:
+          - build_type: Release
+            sanitizers: 'OFF'
+          - build_type: Debug
+            sanitizers: 'ON'
     steps:
       - uses: actions/checkout@v4
       - name: Configure
-        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Debug -DSCENESEEK_SANITIZERS=${{ matrix.sanitizers }}
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -DSCENESEEK_SANITIZERS=${{ matrix.sanitizers }}
       - name: Build
         run: cmake --build build
       - name: Test
@@ -103,3 +107,5 @@ jobs:
           curl --fail --silent http://127.0.0.1:8000/ >/dev/null
           test "$(docker exec sceneseek-ci id -u)" = "10001"
           docker exec sceneseek-ci python -c "from pathlib import Path; assert Path('/data/.session-secret').stat().st_mode & 0o077 == 0"
+          docker exec sceneseek-ci python -c "import urllib.request, json; health = json.load(urllib.request.urlopen('http://127.0.0.1:8000/api/health')); assert health['retrieval_engine'] == 'cpp' and health['index_storage'] == 'ssidx-v1'"
+          docker exec sceneseek-ci sceneseek benchmark 100 8 3 2

@@ -46,6 +46,7 @@ def main():
         assert job['status'] == 'complete', job.get('error') or job['status']
         health = client.get('/api/health').json()
         assert health['embedder'] == 'clip' and health['similarity_backend'] == 'cpp' and health['model_loaded']
+        assert health['retrieval_engine'] == 'cpp' and health['index_storage'] == 'ssidx-v1'
         report['runtime'] = health
         response = client.post('/api/search/text', json={'query':'an animated rabbit in a forest','top_k':3})
         response.raise_for_status()

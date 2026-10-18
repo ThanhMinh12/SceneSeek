@@ -12,7 +12,8 @@ WORKDIR /build
 COPY CMakeLists.txt ./
 COPY cpp/ ./cpp/
 RUN cmake -S . -B out -G Ninja -DCMAKE_BUILD_TYPE=Release -DSCENESEEK_BUILD_TESTS=OFF \
-    && cmake --build out
+    && cmake --build out \
+    && cmake --install out --prefix /opt/sceneseek
 
 FROM python:3.11-slim
 ENV PYTHONDONTWRITEBYTECODE=1 \
@@ -20,13 +21,15 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     OMP_NUM_THREADS=2 \
     SCENESEEK_DATA_DIR=/data \
     SCENESEEK_FRONTEND_DIR=/app/frontend \
-    SCENESEEK_NATIVE_LIBRARY=/usr/local/lib/libsceneseek_core.so
+    SCENESEEK_NATIVE_LIBRARY=/usr/local/lib/libsceneseek_core.so \
+    SCENESEEK_REQUIRE_NATIVE=true
 RUN apt-get update && apt-get install -y --no-install-recommends ffmpeg libgl1 libglib2.0-0 libgomp1 curl \
     && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 COPY backend/requirements.lock ./backend/
 RUN pip install --no-cache-dir --no-deps -r backend/requirements.lock
-COPY --from=native /build/out/libsceneseek_core.so /usr/local/lib/libsceneseek_core.so
+COPY --from=native /opt/sceneseek/lib/libsceneseek_core.so /usr/local/lib/libsceneseek_core.so
+COPY --from=native /opt/sceneseek/bin/sceneseek /usr/local/bin/sceneseek
 COPY backend/sceneseek ./sceneseek
 COPY --from=frontend /build/frontend/dist ./frontend
 RUN pip check \

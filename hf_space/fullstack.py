@@ -31,7 +31,7 @@ def main():
     config = replace(Settings.from_env(), data_dir=Path(os.getenv('SCENESEEK_DATA_DIR', '/tmp/sceneseek-fullstack')),
                      frontend_dir=ROOT/'frontend/dist', max_video_seconds=60, max_upload_bytes=40*1024**2,
                      max_query_bytes=40*1024**2, frame_interval_seconds=1.0, browser_playback=True,
-                     native_library=build/'libsceneseek_core.so')
+                     native_library=build/'libsceneseek_core.so', require_native=True)
     embedder = models.HostedEmbedder()
     embedder.loaded = True
     server = create_app(config, app_factory=gr.Server, queued_inference=True, embedder=embedder)

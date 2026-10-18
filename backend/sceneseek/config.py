@@ -26,6 +26,9 @@ class Settings:
     browser_playback: bool = False
     max_storage_bytes: int = 2 * 1024 ** 3
     clip_revision: str | None = None
+    native_cache_mb: int = 64
+    native_search_threads: int = 2
+    require_native: bool = False
 
     @classmethod
     def from_env(cls) -> "Settings":
@@ -51,6 +54,9 @@ class Settings:
                 os.getenv("SCENESEEK_CORS_ORIGINS", "http://localhost:5173")
             ),
             native_library=Path(native).resolve() if native else None,
+            native_cache_mb=int(os.getenv('SCENESEEK_NATIVE_CACHE_MB', '64')),
+            native_search_threads=int(os.getenv('SCENESEEK_NATIVE_THREADS', '2')),
+            require_native=os.getenv('SCENESEEK_REQUIRE_NATIVE', 'false').lower() == 'true',
             max_pending_jobs=max(1, int(os.getenv("SCENESEEK_MAX_PENDING_JOBS", "2"))),
             max_video_seconds=float(os.getenv("SCENESEEK_MAX_VIDEO_SECONDS", "600")),
             browser_playback=os.getenv("SCENESEEK_BROWSER_PLAYBACK", "true").lower() == "true",

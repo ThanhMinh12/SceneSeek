@@ -9,6 +9,8 @@ class HealthResponse(BaseModel):
     status: Literal["ok"] = "ok"
     version: str
     similarity_backend: Literal["cpp", "numpy"]
+    retrieval_engine: Literal["cpp", "numpy"]
+    index_storage: Literal['ssidx-v1', 'legacy-npz']
     embedder: str
     model_loaded: bool
     indexed_videos: int

@@ -8,6 +8,9 @@ __pycache__/
 *.so
 *.dylib
 *.dll
+*.ssidx
+*.ssidx.tmp-*
+*.npz
 build/
 cmake-build-*/
 frontend/node_modules/
