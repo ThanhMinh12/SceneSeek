@@ -110,18 +110,22 @@ Docker Desktop remains unavailable locally.
 
 ### Interface update — October 18, 2026
 
-The React interface now guides an empty library toward one action: adding a
-video. Search appears after an upload, with compact text/image/clip controls,
-clear processing states, and timestamped playback. The library and technical
-details are collapsible; removal stays accessible on phones. The player supports
-Escape, focus restoration, and keyboard focus containment. Upload limits come
-from the API.
+The opening screen has one main action: choose a video. Processing replaces
+upload; text search appears only after a video is ready. Alternative image/clip
+queries are available through the search-type selector instead of showing
+three competing input panels. The Videos button opens library management only
+when requested, including adding/removing videos. Limits and technical links
+are available in Help; the short retention/privacy notice remains visible.
+The player supports Escape, focus restoration, and keyboard focus containment.
+Upload limits come from the API.
 
 The separate `scripts/smoke_ui.py` browser suite uses explicitly controlled API
 fixtures, not CLIP inference. It verifies upload validation and progress, all
 three search modes, a genuinely playable in-memory video, keyboard playback
 controls, empty/error results, deletion, a single runtime bootstrap, and layouts
-at 320, 390, 768, and 1440 pixels. GitHub Actions runs it against the production
+at 320, 390, 768, and 1440 pixels. It additionally asserts one visible main
+action on first load, processing replacing upload, and library management hidden
+until requested. GitHub Actions runs it against the production
 web build and retains screenshots. Earlier real-model results remain separate;
 this update does not claim a new retrieval quality or performance benchmark.
 

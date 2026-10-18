@@ -83,7 +83,13 @@ def main():
         page.goto(args.url)
         expect(page.get_by_role('button', name='Choose video', exact=True)).to_be_visible()
         expect(page.get_by_role('textbox', name='Describe the scene to find')).to_have_count(0)
+        expect(page.locator('aside')).to_have_count(0)
+        expect(page.locator('select')).to_have_count(0)
+        assert page.locator('main button:visible').count() == 1, 'The opening screen should have one main action'
         responsive(page, 'empty')
+        page.locator('.help-menu > summary').click()
+        expect(page.get_by_role('link', name='Source code', exact=False)).to_be_visible()
+        page.locator('.help-menu > summary').click()
         # Create a genuinely playable, tiny WebM in memory without model/FFmpeg dependencies.
         media = bytes(page.evaluate('''async () => {
           const canvas = document.createElement('canvas'); canvas.width = 160; canvas.height = 90;
@@ -101,13 +107,15 @@ def main():
         expect(page.get_by_role('alert')).to_contain_text('Choose an MP4')
         assert state['uploads'] == 0
         page.get_by_label('Upload video', exact=True).set_input_files({'name': 'practice.mp4', 'mimeType': 'video/mp4', 'buffer': b'controlled upload fixture'})
-        expect(page.get_by_role('button', name='Search', exact=True)).to_be_disabled()
+        expect(page.get_by_role('button', name='Search', exact=True)).to_have_count(0)
         expect(page.get_by_role('progressbar')).to_be_visible()
-        expect(page.get_by_text('Ready to search', exact=False)).to_be_visible(timeout=20000)
+        expect(page.get_by_role('textbox', name='Describe the scene to find')).to_be_visible(timeout=20000)
+        expect(page.get_by_label('Search with')).to_have_value('text')
+        expect(page.locator('aside')).to_have_count(0)
         page.get_by_role('textbox', name='Describe the scene to find').fill('red car')
         page.get_by_role('button', name='Search', exact=True).click()
         expect(page.locator('.result-card')).to_have_count(1)
-        expect(page.locator('.library')).not_to_have_attribute('open', '')
+        expect(page.locator('aside')).to_have_count(0)
         responsive(page, 'results')
         page.locator('.result-visual').first.click()
         expect(page.get_by_role('dialog')).to_be_visible()
@@ -117,33 +125,34 @@ def main():
         page.keyboard.press('Escape')
         expect(page.get_by_role('dialog')).to_have_count(0)
         expect(page.locator('.result-visual').first).to_be_focused()
-        page.get_by_role('button', name='Image', exact=True).click()
+        page.get_by_label('Search with').select_option('image')
         expect(page.get_by_role('button', name='Search', exact=True)).to_be_disabled()
         page.get_by_label('Upload reference image').set_input_files({'name': 'reference.png', 'mimeType': 'image/png', 'buffer': b'controlled image fixture'})
         page.get_by_role('button', name='Search', exact=True).click()
         expect(page.locator('.result-card')).to_have_count(1)
-        page.get_by_role('button', name='Video clip', exact=True).click()
+        page.get_by_label('Search with').select_option('clip')
         page.get_by_label('Upload reference clip').set_input_files({'name': 'reference.webm', 'mimeType': 'video/webm', 'buffer': media})
         page.get_by_role('button', name='Search', exact=True).click()
         expect(page.get_by_text('Matched at 2× speed')).to_be_visible()
-        page.get_by_role('button', name='Text', exact=True).click()
+        page.get_by_label('Search with').select_option('text')
         page.get_by_role('textbox', name='Describe the scene to find').fill('nothing')
         page.get_by_role('button', name='Search', exact=True).click()
         expect(page.get_by_role('heading', name='No matching moments')).to_be_visible()
         page.get_by_role('textbox', name='Describe the scene to find').fill('server error')
         page.get_by_role('button', name='Search', exact=True).click()
         expect(page.get_by_role('alert')).to_contain_text('search worker is busy')
-        page.locator('.library > summary').click()
+        page.get_by_role('button', name='Video library', exact=True).click()
         expect(page.get_by_role('button', name='Remove Practice video')).to_be_visible()
         responsive(page, 'library')
         page.on('dialog', lambda dialog: dialog.accept())
         page.get_by_role('button', name='Remove Practice video').click()
         expect(page.get_by_role('button', name='Choose video', exact=True)).to_be_visible()
+        expect(page.locator('aside')).to_have_count(0)
         assert state['searches'] == ['text', 'image', 'clip', 'text', 'text'], state
         assert state['runtime_requests'] == 1, state
         assert not errors, errors
         browser.close()
-    print(json.dumps({'status': 'passed', 'controlled_api_fixtures': True, 'real_model_inference': False, 'widths': [1440, 768, 390, 320], 'checks': ['simple empty state', 'file validation', 'upload', 'progress', 'text search', 'image search', 'clip search', 'playable video', 'keyboard dialog', 'empty results', 'server error', 'mobile deletion', 'single session bootstrap']}))
+    print(json.dumps({'status': 'passed', 'controlled_api_fixtures': True, 'real_model_inference': False, 'widths': [1440, 768, 390, 320], 'checks': ['one-action opening screen', 'progress replaces upload', 'library only on request', 'search modes in optional selector', 'file validation', 'text search', 'image search', 'clip search', 'playable video', 'keyboard dialog', 'empty results', 'server error', 'mobile deletion', 'single session bootstrap']}))
 
 
 if __name__ == '__main__':
