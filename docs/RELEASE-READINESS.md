@@ -25,6 +25,21 @@ Chromium through the production React build, playing the 30-second result
 without a media error. This is one public Blender trailer
 fixture, not a general accuracy or latency claim.
 
+The [deployed native release](https://huggingface.co/spaces/ThanhMinh12/SceneSeek/commit/1a328cf1f84553cd5cdd257f9f168b3a3467337c)
+reports version **0.2.0**, `retrieval_engine: cpp`, and `index_storage: ssidx-v1`.
+Its real ZeroGPU replay also passed upload/indexing, text retrieval, image at
+**12.0 s**, and normal/.5x/2x clips at **10.0–18.0 s**, **10.0–17.98 s**,
+and **10.0–18.08 s**, respectively.
+Range streaming and a stranger's empty search/media denial passed; the test
+video was deleted afterward (204). Chromium loaded the public React welcome.
+Requested and actual hardware remain **zero-a10g**; no paid resources were added.
+These checks use a public fixture and do not establish general search accuracy.
+
+The implementation's [GitHub verification run](https://github.com/ThanhMinh12/SceneSeek/actions/runs/39156781889)
+passed Release, ASan/UBSan, API/hosted-adapter, React/browser, and container jobs.
+The installed non-root image starts with native retrieval required, serves API
+and frontend, and runs the standalone C++ benchmark without Python inference.
+
 The prior release history below remains for provenance. The native upgrade's
 operational details supersede older descriptions of NumPy-owned indexes.
 
