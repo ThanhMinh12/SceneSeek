@@ -81,6 +81,7 @@ def main():
         page.on('pageerror', lambda error: errors.append(str(error)))
         page.route('**/api/**', handle)
         page.goto(args.url)
+        expect(page.locator('.workspace-heading')).to_contain_text('Find a scene by describing it, or use an image or clip.')
         expect(page.get_by_role('button', name='Choose video', exact=True)).to_be_visible()
         expect(page.get_by_role('textbox', name='Describe the scene to find')).to_have_count(0)
         expect(page.locator('aside')).to_have_count(0)
