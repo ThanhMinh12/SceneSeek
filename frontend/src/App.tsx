@@ -1,4 +1,5 @@
 import { FormEvent, useEffect, useRef, useState } from "react";
+import WelcomeStory from "./WelcomeStory";
 import { api, type Runtime } from "./api";
 import type { Health, Job, SearchMode, SearchResponse, SearchResult, Video } from "./types";
 
@@ -86,6 +87,7 @@ export default function App() {
   const queryFileInput = useRef<HTMLInputElement>(null);
   const readyVideos = videos.filter((video) => video.status === "ready");
   const preparing = videos.some((video) => ["queued", "processing"].includes(video.status));
+  const welcome = !loading && !videos.length && !libraryOpen;
 
   const refresh = async () => {
     try {
@@ -153,7 +155,7 @@ export default function App() {
 
   return <div className="app-shell">
     <a className="skip-link" href="#workspace">Skip to workspace</a>
-    <header className="topbar"><a className="brand" href="#workspace"><span className="brand-mark"><Icon name="play" /></span>SceneSeek</a><div className="top-actions">
+    <header className="topbar"><a className="brand" href="#workspace"><img className="brand-logo" src="/brandmark.svg" width="36" height="36" alt="" />SceneSeek</a><div className="top-actions">
       {videos.length > 0 && <button className="quiet-button" aria-label="Video library" aria-expanded={libraryOpen} onClick={() => setLibraryOpen(!libraryOpen)}>Videos · {videos.length}</button>}
       <details className="help-menu"><summary>Help</summary><div><p>Choose a video. Once it is prepared, describe a scene and press Search. You can switch to an image or clip when needed.</p>{runtime && <p>MP4, MOV, MKV, WebM, AVI, M4V · Up to {runtime.max_video_seconds}s / {runtime.max_upload_mb} MB each.</p>}{runtime?.queued_inference && <p>Free GPU demo. Up to 3 videos. Queues and daily limits apply. Files expire after an hour; use non-sensitive videos.</p>}<a href="https://github.com/ThanhMinh12/SceneSeek" target="_blank" rel="noreferrer">Source code ↗</a><a href="/api/docs">API documentation ↗</a></div></details>
     </div></header>
@@ -176,10 +178,13 @@ export default function App() {
           <div className="sidebar-footer"><p>{health ? `${readyVideos.length} ready to search · Private to this browser` : "Connecting to SceneSeek…"}</p><a href="/api/docs">API documentation ↗</a></div>
         </div>
       </aside>}
-      <main id="workspace">
-        <div className="workspace-inner">
-          <div className="workspace-heading"><h1>{!videos.length ? "Search inside a video" : !readyVideos.length ? preparing ? "Preparing your video" : "Couldn’t prepare this video" : "Find a moment"}</h1><p>{!videos.length ? "Find a scene by describing it, or use an image or clip. Choose a video to get started." : !readyVideos.length ? preparing ? "Search will be available when processing finishes." : "Try a different video to continue." : "Describe the scene you’re looking for."}</p></div>
+      <main id="workspace" className={welcome ? "welcome-main" : undefined}>
+        <div className={`workspace-inner ${welcome ? "welcome-workspace" : ""}`}>
           {error && <div className="error-banner" role="alert"><span>{error}</span><button onClick={() => setError(null)} aria-label="Dismiss error">×</button></div>}
+          <div className={welcome ? "welcome-layout" : undefined}>
+          {welcome && <WelcomeStory />}
+          <div className={welcome ? "welcome-action" : undefined}>
+          <div className="workspace-heading">{welcome ? <h2>Search inside a video</h2> : <h1>{!videos.length ? "Search inside a video" : !readyVideos.length ? preparing ? "Preparing your video" : "Couldn’t prepare this video" : "Find a moment"}</h1>}<p>{!videos.length ? "Choose a video to get started." : !readyVideos.length ? preparing ? "Search will be available when processing finishes." : "Try a different video to continue." : "Describe the scene you’re looking for."}</p></div>
           {loading ? <div className="loading-state" role="status">Loading your library…</div> : !videos.length ? <section className={`upload-empty ${dragging ? "dragging" : ""}`} aria-label="Upload your first video" onDragOver={(event) => { event.preventDefault(); setDragging(true); }} onDragLeave={() => setDragging(false)} onDrop={(event) => { event.preventDefault(); setDragging(false); void upload(event.dataTransfer.files[0]); }}>
             <span className="empty-icon"><Icon name="film" /></span><button className="button primary" disabled={uploading} onClick={() => uploadInput.current?.click()}><Icon name="upload" />{uploading ? "Uploading…" : "Choose video"}</button><p>or drag and drop a video here</p><small>{runtime ? `Up to ${runtime.max_video_seconds} seconds / ${runtime.max_upload_mb} MB` : "Video files"}</small>
           </section> : !readyVideos.length ? <section className="preparing-state" aria-label="Video preparation">
@@ -202,6 +207,8 @@ export default function App() {
             {response && <section className="results-section" aria-live="polite"><div className="section-heading"><h2>{response.results.length ? `${response.results.length} matching moment${response.results.length === 1 ? "" : "s"}` : "No matching moments"}</h2>{response.results.length > 0 && <span>Select a moment to play</span>}</div>{response.results.length ? <div className="results-grid">{response.results.map((result, index) => <ResultCard key={`${result.video_id}-${result.timestamp_seconds}-${index}`} result={result} onPlay={() => setPlaying(result)} />)}</div> : <div className="no-results"><p>Try a broader description or a different reference.</p></div>}</section>}
           </>}
           {runtime?.queued_inference && <p className="privacy-note">Use non-sensitive videos. Files expire after an hour.</p>}
+          </div>
+          </div>
         </div>
       </main>
     </div>

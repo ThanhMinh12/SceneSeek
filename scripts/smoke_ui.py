@@ -67,9 +67,15 @@ def main():
             route.fulfill(status=404, json={'detail': 'Unknown fixture route'})
 
     def responsive(page, name):
-        for width in (1440, 768, 390, 320):
+        for width in (1440, 1024, 768, 390, 320):
             page.set_viewport_size({'width': width, 'height': 900})
             assert page.evaluate('document.documentElement.scrollWidth <= innerWidth + 1'), f'{name} overflows at {width}px'
+            if name == 'empty':
+                story = page.locator('.welcome-story').bounding_box()
+                action = page.locator('.welcome-action').bounding_box()
+                assert story['x'] < action['x'] if width > 850 else story['y'] + story['height'] < action['y']
+                button = page.get_by_role('button', name='Choose video', exact=True).bounding_box()
+                assert button['y'] + button['height'] <= 900, f'Upload action is below the fold at {width}px'
             if args.screenshots and width in (1440, 390):
                 page.screenshot(path=str(args.screenshots / f'sceneseek-{name}-{width}.png'), full_page=True)
 
@@ -81,7 +87,13 @@ def main():
         page.on('pageerror', lambda error: errors.append(str(error)))
         page.route('**/api/**', handle)
         page.goto(args.url)
-        expect(page.locator('.workspace-heading')).to_contain_text('Find a scene by describing it, or use an image or clip.')
+        expect(page.locator('.welcome-story h1')).to_contain_text('Less scrubbing.')
+        expect(page.locator('.welcome-story h1 em')).to_have_text('More finding.')
+        expect(page.locator('h1')).to_have_count(1)
+        expect(page.locator('.welcome-description')).to_have_text('Find the scene you remember with a description, an image, or a clip.')
+        expect(page.locator('.brand-logo')).to_have_js_property('complete', True)
+        assert page.locator('.brand-logo').evaluate('(node) => node.naturalWidth') > 0
+        expect(page.locator('link[rel="icon"]')).to_have_attribute('href', '/brandmark.svg')
         expect(page.get_by_role('button', name='Choose video', exact=True)).to_be_visible()
         expect(page.get_by_role('textbox', name='Describe the scene to find')).to_have_count(0)
         expect(page.locator('aside')).to_have_count(0)
@@ -110,6 +122,7 @@ def main():
         page.get_by_label('Upload video', exact=True).set_input_files({'name': 'practice.mp4', 'mimeType': 'video/mp4', 'buffer': b'controlled upload fixture'})
         expect(page.get_by_role('button', name='Search', exact=True)).to_have_count(0)
         expect(page.get_by_role('progressbar')).to_be_visible()
+        expect(page.locator('.welcome-story')).to_have_count(0)
         expect(page.get_by_role('textbox', name='Describe the scene to find')).to_be_visible(timeout=20000)
         expect(page.get_by_label('Search with')).to_have_value('text')
         expect(page.locator('aside')).to_have_count(0)
@@ -153,7 +166,7 @@ def main():
         assert state['runtime_requests'] == 1, state
         assert not errors, errors
         browser.close()
-    print(json.dumps({'status': 'passed', 'controlled_api_fixtures': True, 'real_model_inference': False, 'widths': [1440, 768, 390, 320], 'checks': ['one-action opening screen', 'progress replaces upload', 'library only on request', 'search modes in optional selector', 'file validation', 'text search', 'image search', 'clip search', 'playable video', 'keyboard dialog', 'empty results', 'server error', 'mobile deletion', 'single session bootstrap']}))
+    print(json.dumps({'status': 'passed', 'controlled_api_fixtures': True, 'real_model_inference': False, 'widths': [1440, 1024, 768, 390, 320], 'checks': ['logo and favicon', 'branded headline with one visible upload action', 'headline gives way to video preparation', 'progress replaces upload', 'library only on request', 'search modes in optional selector', 'file validation', 'text search', 'image search', 'clip search', 'playable video', 'keyboard dialog', 'empty results', 'server error', 'mobile deletion', 'single session bootstrap']}))
 
 
 if __name__ == '__main__':

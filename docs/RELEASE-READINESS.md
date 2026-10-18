@@ -108,6 +108,16 @@ Docker Desktop remains unavailable locally.
 
 ## Reproduce
 
+### Branded welcome — October 18, 2026
+
+The front page uses a custom SVG video/search mark, matching favicon, and the
+headline “Less scrubbing. More finding.” beside one upload card. After upload,
+the headline gives way to preparation and search; optional modes and the library
+remain on demand. No external fonts, trackers, or frontend dependencies were added.
+Controlled browser regressions cover the logo, five widths (320–1440 px),
+the visible upload action, and existing text/image/clip/player workflows.
+These are UI fixture tests, not a new model-inference or accuracy evaluation.
+
 ### Interface update — October 18, 2026
 
 The opening screen has one main action: choose a video. Processing replaces
