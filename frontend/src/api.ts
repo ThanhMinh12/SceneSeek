@@ -13,9 +13,17 @@ async function parse<T>(response: Response): Promise<T> {
   throw new Error(message);
 }
 
-let runtimePromise: Promise<{queued_inference: boolean; frame_interval_seconds: number}> | undefined;
+export interface Runtime {
+  queued_inference: boolean;
+  temporary: boolean;
+  max_video_seconds: number;
+  max_upload_mb: number;
+  frame_interval_seconds: number;
+}
+
+let runtimePromise: Promise<Runtime> | undefined;
 function runtime() {
-  return runtimePromise ??= fetch('/api/runtime', {cache:'no-store'}).then(r => parse<{queued_inference: boolean; frame_interval_seconds: number}>(r));
+  return runtimePromise ??= fetch('/api/runtime', {cache:'no-store'}).then(r => parse<Runtime>(r));
 }
 async function request(path: string, options?: RequestInit) {
   await runtime(); // Establish exactly one signed session before parallel calls.
