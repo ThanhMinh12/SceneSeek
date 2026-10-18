@@ -108,6 +108,30 @@ Docker Desktop remains unavailable locally.
 
 ## Reproduce
 
+### Interface update — October 18, 2026
+
+The React interface now guides an empty library toward one action: adding a
+video. Search appears after an upload, with compact text/image/clip controls,
+clear processing states, and timestamped playback. The library and technical
+details are collapsible; removal stays accessible on phones. The player supports
+Escape, focus restoration, and keyboard focus containment. Upload limits come
+from the API.
+
+The separate `scripts/smoke_ui.py` browser suite uses explicitly controlled API
+fixtures, not CLIP inference. It verifies upload validation and progress, all
+three search modes, a genuinely playable in-memory video, keyboard playback
+controls, empty/error results, deletion, a single runtime bootstrap, and layouts
+at 320, 390, 768, and 1440 pixels. GitHub Actions runs it against the production
+web build and retains screenshots. Earlier real-model results remain separate;
+this update does not claim a new retrieval quality or performance benchmark.
+
+```bash
+# Build frontend/ and serve it with Vite preview first.
+python scripts/smoke_ui.py --url http://127.0.0.1:4176
+```
+
+### Full pipeline
+
 Build the C++ core, install `backend/requirements.lock` with frozen `--no-deps`
 installation, install `backend/requirements-dev.txt` for tests, and run pytest.
 The real regression script additionally needs httpx and optional Playwright.
