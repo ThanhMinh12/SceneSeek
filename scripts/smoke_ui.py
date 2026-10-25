@@ -87,10 +87,16 @@ def main():
         page.on('pageerror', lambda error: errors.append(str(error)))
         page.route('**/api/**', handle)
         page.goto(args.url)
-        expect(page.locator('.welcome-story h1')).to_contain_text('Less scrubbing.')
-        expect(page.locator('.welcome-story h1 em')).to_have_text('More finding.')
+        expect(page.locator('.welcome-story h1')).to_have_text('Video search')
+        expect(page).to_have_title('SceneSeek — Video search')
+        assert 'Less scrubbing.' not in page.locator('body').inner_text()
+        assert page.locator('html').evaluate('(node) => getComputedStyle(node).backgroundColor') == 'rgb(255, 255, 255)'
+        assert page.evaluate('''async () => {
+            await document.fonts.load('400 16px "Source Sans 3"');
+            return [...document.fonts].some(font => font.family.includes('Source Sans 3') && font.status === 'loaded');
+        }''')
         expect(page.locator('h1')).to_have_count(1)
-        expect(page.locator('.welcome-description')).to_have_text('Find the scene you remember with a description, an image, or a clip.')
+        expect(page.locator('.welcome-description')).to_have_text('Add a video, then search with text, an image, or a clip.')
         expect(page.locator('.brand-logo')).to_have_js_property('complete', True)
         assert page.locator('.brand-logo').evaluate('(node) => node.naturalWidth') > 0
         expect(page.locator('link[rel="icon"]')).to_have_attribute('href', '/assets/brandmark.svg')
